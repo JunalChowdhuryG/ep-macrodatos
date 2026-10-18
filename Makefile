@@ -2,7 +2,7 @@
 SRC  := src
 OUT  := build
 DIST := dist 
-JOBS := job0 c1
+JOBS := job0 c1 c2
 
 .PHONY: all clean
 all:

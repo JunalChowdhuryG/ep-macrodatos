@@ -20,7 +20,7 @@ public class C2Driver {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 2) {
-            System.err.println("Uso: C2Driver <entrada> <base_salida> [minN=30]");
+            System.err.println("Uso: C2Driver <entrada> <base_salida> [minN=30] [minFrac=0.25]");
             System.exit(1);
         }
         String in = args[0];
@@ -28,6 +28,7 @@ public class C2Driver {
         String o2 = args[1] + "/job2";
         String o3 = args[1] + "/job3";
         int minN = args.length > 2 ? Integer.parseInt(args[2]) : 30;
+        float minFrac = args.length > 3 ? Float.parseFloat(args[3]) : 0.25f;
 
         long t0 = System.nanoTime();
 
@@ -41,6 +42,7 @@ public class C2Driver {
         JobConf j2 = base("C2_Job2_variacion", Job2Mapper.class, Job2Reducer.class);
         j2.setNumReduceTasks(1);
         j2.setInt("min.n", minN);
+        j2.setFloat("min.frac", minFrac);
         FileInputFormat.setInputPaths(j2, new Path(o1));
         FileOutputFormat.setOutputPath(j2, new Path(o2));
         double s2 = run(j2);

@@ -15,9 +15,11 @@ public class Job3Reducer extends MapReduceBase implements Reducer<Text, Text, Te
     public void reduce(Text carretera, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
         String mayorSubida = null, mayorBajada = null;
         double maxV = Double.NEGATIVE_INFINITY, minV = Double.POSITIVE_INFINITY;
+        int transiciones = 0;
         while (values.hasNext()) {
             String linea = values.next().toString();
             double v = Double.parseDouble(linea.split(",")[4]);
+            transiciones++;
             if (v > maxV) {
                 maxV = v;
                 mayorSubida = linea;
@@ -27,9 +29,11 @@ public class Job3Reducer extends MapReduceBase implements Reducer<Text, Text, Te
                 mayorBajada = linea;
             }
         }
-        if (mayorSubida != null) {
-            output.collect(carretera, new Text("MAYOR_SUBIDA," + mayorSubida));
-            output.collect(carretera, new Text("MAYOR_BAJADA," + mayorBajada));
+        if (mayorSubida != null && maxV > 0) {
+            output.collect(carretera, new Text("MAYOR_SUBIDA," + mayorSubida + "," + transiciones));
+        }
+        if (mayorBajada != null && minV < 0) {
+            output.collect(carretera, new Text("MAYOR_BAJADA," + mayorBajada + "," + transiciones));
         }
     }
 }

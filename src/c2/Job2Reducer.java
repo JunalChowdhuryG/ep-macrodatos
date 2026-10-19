@@ -2,6 +2,7 @@ package c2;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -25,21 +26,35 @@ import org.apache.hadoop.mapred.*;
 public class Job2Reducer extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
 
     private int minN;
+    private double minFrac;
 
     @Override
     public void configure(JobConf job) {
         minN = job.getInt("min.n", 30);
+        minFrac = job.getFloat("min.frac", 0.25f);
     }
 
     public void reduce(Text carretera, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
-        List<String[]> meses = new ArrayList<String[]>(); // [yyyy-MM, n, sumExc]
+        List<String[]> todos = new ArrayList<String[]>(); // [yyyy-MM, n, sumExc]
         while (values.hasNext()) {
-            String[] p = values.next().toString().split(",");
-            if (Double.parseDouble(p[1]) < minN) {
+            todos.add(values.next().toString().split(","));
+        }
+
+        double[] ns = new double[todos.size()];
+        for (int i = 0; i < ns.length; i++) {
+            ns[i] = Double.parseDouble(todos.get(i)[1]);
+        }
+        Arrays.sort(ns);
+        double mediana = ns.length % 2 == 1 ? ns[ns.length / 2] : (ns[ns.length / 2 - 1] + ns[ns.length / 2]) / 2.0;
+        double umbral = Math.max(minN, minFrac * mediana);
+
+        List<String[]> meses = new ArrayList<String[]>();
+        for (String[] m : todos) {
+            if (Double.parseDouble(m[1]) < umbral) {
                 reporter.incrCounter("calidad", "meses_descartados_n_bajo", 1);
-                continue;
+            } else {
+                meses.add(m);
             }
-            meses.add(p);
         }
         Collections.sort(meses, new Comparator<String[]>() {
             public int compare(String[] a, String[] b) {

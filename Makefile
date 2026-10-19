@@ -7,7 +7,7 @@ SRC  := src
 OUT  := build
 DIST := dist
 # Un nombre por carpeta src/<nombre>/ que tenga su Driver (se ira ampliando)
-JOBS := job0 c1 c2 c3 c4 c5
+JOBS := job0 c1 c2 c3 c4 c5 techo
 
 .PHONY: all clean
 all:

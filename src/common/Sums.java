@@ -4,7 +4,11 @@ import java.util.Iterator;
 
 import org.apache.hadoop.io.Text;
 
-
+/**
+ * Vector de sumas "a,b,c,..." como texto. Sumar vectores es asociativo y
+ * conmutativo, asi que el mismo codigo sirve de Combiner y de Reducer.
+ * (Double.toString no depende del locale, a diferencia de String.format sin Locale.)
+ */
 public final class Sums {
 
     private Sums() {

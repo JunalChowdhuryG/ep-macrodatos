@@ -6,7 +6,7 @@ import java.util.Iterator;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
 
-
+/** Reducer/Combiner generico: suma los vectores de cada llave. */
 public class SumsReducer extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
 
     public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {

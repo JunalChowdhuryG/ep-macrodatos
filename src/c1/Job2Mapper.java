@@ -8,7 +8,12 @@ import org.apache.hadoop.mapred.*;
 
 import common.Sums;
 
-
+/**
+ * C1 - Job 2: lee la SALIDA del Job 1 (carretera|lat|lon TAB n,sumPct,...) y la
+ * agrega por carretera. Suma n y sumPct de todos sus sitios, de modo que el
+ * promedio de la carretera es el promedio real de detecciones (no un promedio
+ * de promedios de sitios). El Reducer es common.SumsReducer.
+ */
 public class Job2Mapper extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text> {
 
     public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {

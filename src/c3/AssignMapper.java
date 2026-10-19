@@ -1,5 +1,6 @@
 package c3;
 
+import common.Grid;
 import java.io.IOException;
 import java.util.Map;
 
@@ -11,7 +12,9 @@ import common.Detection;
 import common.Sums;
 
 /**
- * C3 - Job C: asigna cada punto al cluster de su celda
+ * C3 - Job C: asigna cada punto al cluster de su celda (join broadcast con la tabla de
+ * celdas finales) y suma [n, lat, lon] por cluster -> centroides. Puntos en celdas no
+ * densas = ruido. Reducer/Combiner: common.SumsReducer.
  */
 public class AssignMapper extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text> {
 

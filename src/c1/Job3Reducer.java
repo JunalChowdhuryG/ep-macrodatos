@@ -13,7 +13,12 @@ import org.apache.hadoop.mapred.*;
 
 import common.Sums;
 
-
+/**
+ * C1 - Job 3: para cada carretera calcula, por sitio, la RAZON entre el % de
+ * exceso del sitio y el % de exceso medio de la carretera, y emite los top-K.
+ * Descarta sitios con menos de min.n detecciones (promedios de pocas filas son ruido).
+ * Salida: carretera TAB rank,lat,lon,n,exceso_medio,pct_sitio,pct_carretera,razon
+ */
 public class Job3Reducer extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
 
     private int minN;
@@ -44,7 +49,7 @@ public class Job3Reducer extends MapReduceBase implements Reducer<Text, Text, Te
         }
         double pctCarretera = totalPct / totalN;
 
-        List<double[]> filas = new ArrayList<double[]>(); 
+        List<double[]> filas = new ArrayList<double[]>(); // n, pctSitio, lat, lon, excesoMedio, razon
         for (double[] s : sitios) {
             if (s[0] < minN) {
                 reporter.incrCounter("calidad", "sitios_descartados_n_bajo", 1);
@@ -55,7 +60,7 @@ public class Job3Reducer extends MapReduceBase implements Reducer<Text, Text, Te
         }
         Collections.sort(filas, new Comparator<double[]>() {
             public int compare(double[] a, double[] b) {
-                return Double.compare(b[5], a[5]); 
+                return Double.compare(b[5], a[5]); // razon descendente
             }
         });
 

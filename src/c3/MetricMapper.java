@@ -1,5 +1,6 @@
 package c3;
 
+import common.Grid;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;

@@ -4,7 +4,13 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
 
-
+/**
+ * Uso: hadoop jar dist/job0.jar job0.Job0Driver <entrada> <salida>
+ *
+ * A diferencia del lab anterior, main declara "throws Exception" y NO atrapa la
+ * excepcion: si el job falla, el proceso termina con error visible. (El try/catch
+ * que tragaba el error fue lo que dejo un job encadenado "corriendo" sin correr.)
+ */
 public class Job0Driver {
 
     public static void main(String[] args) throws Exception {

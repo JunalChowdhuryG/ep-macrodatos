@@ -1,5 +1,6 @@
 package c3;
 
+import common.Grid;
 import java.io.IOException;
 
 import org.apache.hadoop.io.LongWritable;

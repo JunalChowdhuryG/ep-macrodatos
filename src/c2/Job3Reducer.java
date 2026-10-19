@@ -7,8 +7,10 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
 
 /**
- * C2 - Job 3: patron argmax/argmin sobre la variacion porcentual de cada carretera.
- * Salida (2 lineas por carretera):  carretera TAB TIPO,mes,n,exceso_medio,variacion_abs,variacion_pct
+ * C2 - Job 3: argmax/argmin de la variacion porcentual de cada carretera.
+ * MAYOR_SUBIDA solo se emite si hubo una subida real (>0); MAYOR_BAJADA solo si hubo una
+ * bajada real (<0). Asi nunca se llama "subida" a una caida (caso de una unica transicion).
+ * Salida: carretera TAB TIPO,mes,n,exceso_medio,variacion_abs,variacion_pct,transiciones
  */
 public class Job3Reducer extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
 

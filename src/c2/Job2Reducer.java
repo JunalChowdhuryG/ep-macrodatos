@@ -14,13 +14,15 @@ import org.apache.hadoop.mapred.*;
 
 /**
  * C2 - Job 2 (reducer): serie mensual de UNA carretera y su variacion mes a mes.
- * Este paso necesita ORDEN (comparar cada mes con el anterior), por eso se
- * buffera la lista de meses de la carretera (son ~25) y se ordena en memoria.
+ * Necesita ORDEN (comparar cada mes con el anterior), por eso se buferan los meses
+ * de la carretera (~25) y se ordenan en memoria.
  *
- * Reglas:
- *  - se descartan meses con menos de min.n detecciones (un promedio de pocas filas es ruido)
- *  - la variacion solo se calcula si el mes ANTERIOR existe en el calendario y no fue
- *    descartado; si hubo hueco, la variacion es "NA" (no se compara contra 2 meses atras)
+ * Un mes cuenta solo si n >= max(min.n, min.frac * mediana_de_n_de_la_carretera).
+ * El umbral RELATIVO evita comparar contra meses de arranque o parciales (en este
+ * dataset: un mes con 45 detecciones frente a ~6000 en regimen normal).
+ *
+ * La variacion solo se calcula contra el mes calendario INMEDIATO anterior; tras un
+ * hueco (mes ausente o descartado) vale "NA".
  * Salida: carretera TAB mes,n,exceso_medio,variacion_abs,variacion_pct   (NA si no aplica)
  */
 public class Job2Reducer extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
@@ -40,6 +42,7 @@ public class Job2Reducer extends MapReduceBase implements Reducer<Text, Text, Te
             todos.add(values.next().toString().split(","));
         }
 
+        // Mediana de n sobre TODOS los meses con datos de esta carretera
         double[] ns = new double[todos.size()];
         for (int i = 0; i < ns.length; i++) {
             ns[i] = Double.parseDouble(todos.get(i)[1]);

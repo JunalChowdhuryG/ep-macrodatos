@@ -6,10 +6,21 @@ import org.apache.hadoop.mapred.*;
 
 import common.SumsReducer;
 
-
+/**
+ * C1 - MapReduce TRIPLE con decimales.
+ * "Que sitios tienen un % de exceso mayor que el promedio de su carretera, y
+ *  cuantas veces mayor?"
+ *
+ *   Job 1: (carretera, sitio) -> n, sumas
+ *   Job 2: lee la salida del Job 1 y agrega por carretera
+ *   Job 3: une las salidas de Job 1 y Job 2, calcula la razon y emite top-K
+ *
+ * Uso: hadoop jar dist/c1.jar c1.C1Driver <entrada> <base_salida> [minN=30] [topK=20]
+ * Salidas: <base>/job1, <base>/job2, <base>/job3  (el resultado es job3)
+ */
 public class C1Driver {
 
-    private static final int REDUCERS_JOB1 = 2;  
+    private static final int REDUCERS_JOB1 = 2; // mismo valor en cluster y en 1 worker
 
     public static void main(String[] args) throws Exception {
         if (args.length < 2) {
@@ -25,7 +36,7 @@ public class C1Driver {
 
         long t0 = System.nanoTime();
 
-        //  Job 1 
+        // ---- Job 1 ----
         JobConf j1 = base("C1_Job1_sitios", Job1Mapper.class, SumsReducer.class);
         j1.setCombinerClass(SumsReducer.class);
         j1.setNumReduceTasks(REDUCERS_JOB1);
@@ -33,7 +44,7 @@ public class C1Driver {
         FileOutputFormat.setOutputPath(j1, new Path(o1));
         double s1 = run(j1);
 
-        //  Job 2  (entrada = salida del Job 1)
+        // ---- Job 2 ---- (entrada = salida del Job 1)
         JobConf j2 = base("C1_Job2_carretera", Job2Mapper.class, SumsReducer.class);
         j2.setCombinerClass(SumsReducer.class);
         j2.setNumReduceTasks(1);
@@ -41,7 +52,7 @@ public class C1Driver {
         FileOutputFormat.setOutputPath(j2, new Path(o2));
         double s2 = run(j2);
 
-        //  Job 3  (join: salida del Job 1 + salida del Job 2)
+        // ---- Job 3 ---- (join: salida del Job 1 + salida del Job 2)
         JobConf j3 = base("C1_Job3_razon", Job3Mapper.class, Job3Reducer.class);
         j3.setNumReduceTasks(1);
         j3.setInt("min.n", minN);

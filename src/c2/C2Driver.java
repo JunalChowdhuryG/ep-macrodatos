@@ -13,10 +13,13 @@ import common.SumsReducer;
  *   Job 1: (carretera, mes) -> n, sumExceso
  *   Job 2: lee la salida del Job 1; por carretera ordena los meses y calcula la variacion % mes a mes
  *   Job 3: lee la salida del Job 2; por carretera obtiene la mayor subida y la mayor bajada
+ *
+ * Uso: hadoop jar dist/c2.jar c2.C2Driver <entrada> <base_salida> [minN=30] [minFrac=0.25]
+ * Salidas: <base>/job1, <base>/job2 (serie mensual completa), <base>/job3 (resultado)
  */
 public class C2Driver {
 
-    private static final int REDUCERS_JOB1 = 2; 
+    private static final int REDUCERS_JOB1 = 2; // mismo valor en cluster y en 1 worker
 
     public static void main(String[] args) throws Exception {
         if (args.length < 2) {

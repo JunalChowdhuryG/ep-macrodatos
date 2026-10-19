@@ -5,15 +5,26 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * Parser UNICO del CSV de detecciones de cinemometros (SUTRAN).
+ *
+ * Todas las consultas leen las filas a traves de esta clase, asi la validacion
+ * vive en un solo lugar (en el laboratorio anterior estaba copiada en cada Mapper).
+ *
+ * Columnas esperadas (9):
+ * NRO_DETECCION, FECHA_PAPELETA, REGION, CARRETERA, LATITUD, LONGITUD,
+ * LIMITE_VELOCIDAD, VELOCIDAD_DETECTADA, FECHA_CORTE
+ */
 public final class Detection {
-    public static final char SEP = ';';
+
+    /** Separador del CSV. Cambiar AQUI si el archivo usa ';' o tabulador. */
+    public static final char SEP = ',';
     public static final int N_CAMPOS = 9;
 
-    
+    // Limites amplios del Peru para descartar coordenadas basura (0,0, etc.)
     private static final double LAT_MIN = -19.0, LAT_MAX = 0.0;
     private static final double LON_MIN = -82.0, LON_MAX = -68.0;
-    private static final DateTimeFormatter FECHA = DateTimeFormatter.BASIC_ISO_DATE;
+    private static final DateTimeFormatter FECHA = DateTimeFormatter.BASIC_ISO_DATE; // yyyyMMdd
 
     public final long id;
     public final String region;
@@ -24,9 +35,9 @@ public final class Detection {
     public final int velocidad;
     public final int anio;
     public final int mes;
-    public final int diaSemana;     
-    public final int exceso;       
-    public final double pctExceso;  
+    public final int diaSemana;     // 1 = lunes ... 7 = domingo
+    public final int exceso;        // velocidad - limite, en km/h
+    public final double pctExceso;  // exceso / limite (campo decimal derivado)
 
     private Detection(long id, String region, String carretera, double lat, double lon,
                       int limite, int velocidad, LocalDate fecha) {
@@ -44,6 +55,11 @@ public final class Detection {
         this.pctExceso = (double) (velocidad - limite) / limite;
     }
 
+    /**
+     * Devuelve la deteccion, o null si la fila es invalida (encabezado, numero
+     * de columnas distinto de 9, numeros o fecha ilegibles, coordenadas fuera del Peru).
+     * El llamador debe CONTAR las filas descartadas (contador de Hadoop), no ignorarlas.
+     */
     public static Detection parse(String linea) {
         if (linea == null) {
             return null;
@@ -69,20 +85,27 @@ public final class Detection {
                 return null;
             }
             return new Detection(id, region, carretera, lat, lon, limite, velocidad, fecha);
-        } catch (RuntimeException e) {
+        } catch (RuntimeException e) { // NumberFormatException, DateTimeParseException
             return null;
         }
     }
 
+    /** Particion fija y reproducible: id%5==0 prueba (~20%), id%5==1 codificacion de sitios (~20%), resto entrenamiento (~60%). */
     public boolean esPrueba() {
         return id % 5 == 0;
     }
 
+    /** Filas reservadas SOLO para calcular las estadisticas por sitio (no entrenan ni prueban): evita fuga de etiqueta. */
+    public boolean esCodificacion() {
+        return id % 5 == 1;
+    }
+
+    /** Sitio aproximado de un cinemometro: coordenadas redondeadas a 3 decimales (~110 m). */
     public String sitio() {
         return String.format(java.util.Locale.US, "%.3f|%.3f", lat, lon);
     }
 
-
+    /** Separa respetando comillas (hay carreteras como "Via Penetracion, PE-36"). */
     static List<String> split(String linea) {
         List<String> out = new ArrayList<String>();
         StringBuilder sb = new StringBuilder();

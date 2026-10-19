@@ -1,0 +1,48 @@
+C4 (MLP clasificacion) y C5 (MLP regresion)  [v2: con variables por SITIO]
+7-8-1, descenso de gradiente por lotes con momento, UNA EPOCA = UN job MapReduce.
+Probado en modo local con datos sinteticos: gradiente = diferencias finitas (error ~4e-8), tabla
+de sitios, metricas y AUC coinciden con un calculo independiente en Python. NO probado todavia en
+tu cluster con tus datos reales; los hiperparametros NO estan afinados.
+=====================================================================
+POR QUE v2
+  La corrida v1 (5 variables: lat, lon, limite, dia, mes) se estanco: test_loss 0.5605 vs 0.5804 de
+  la linea base (solo la prevalencia), F1 0.4397 vs 0.4216 de "marcar todo como grave". La senal
+  esta en el SITIO (cinemometro) y una red 5-8-1 no puede distinguir ~176 sitios a partir de
+  lat/lon continuas.
+
+QUE CAMBIA
+  Variables (7): lat, lon, limite, dia, mes + tasa de graves del sitio + exceso medio del sitio.
+  Sitio = cluster de la C3 (la C3 alimenta a los modelos).
+  Para NO filtrar la etiqueta, esas estadisticas se calculan SOLO con las filas
+  NRO_DETECCION % 5 == 1, que no se usan ni para entrenar ni para probar.
+  Suavizado hacia el promedio global: (graves + 10*p0) / (n + 10).  Puntos sin sitio (ruido): 0,0.
+  Particion:  %5==0 prueba (~20%, LAS MISMAS filas de la v1) | %5==1 codificacion (~20%) | resto entrena (~60%).
+  Nuevo: AUC (no depende del umbral) y lineas base de F1 y de perdida.
+
+COMPARACION JUSTA v1 vs v2: la prueba es la misma, asi que (v1 = sin sitio, v2 = con sitio) es una
+ABLACION valida para el informe. Guarda la consola de la v1.
+
+REQUISITOS
+  - /out/job0 debe existir (normalizaciones).
+  - La salida de la C3 debe existir. dirCeldasC3 = ULTIMO directorio de propagacion; en tu corrida
+    la C3 convergio en 5 iteraciones -> /out/c3/prop_5.  cellSize = el de la C3 (0.002).
+    (Si cambias la C3, pasa su nuevo directorio y su cellSize.)
+
+1. COMPILAR
+   docker build -t sutran-build .
+   docker run --rm -v "${PWD}/dist:/app/dist" sutran-build
+
+2. CALIBRACION RAPIDA (5 epocas ~ 3 min por modelo). Cada base de salida debe ser NUEVA.
+   hadoop jar dist/c4.jar c4.C4Driver /sutran/detecciones.csv /out/c4v2_cal /out/job0 /out/c3/prop_5 0.002 5 0.1 0.9 42
+   hadoop jar dist/c5.jar c5.C5Driver /sutran/detecciones.csv /out/c5v2_cal /out/job0 /out/c3/prop_5 0.002 5 0.05 0.9 42
+   -> la perdida de entrenamiento debe BAJAR cada epoca y test_auc debe estar claramente sobre 0.5.
+
+3. ENTRENAMIENTO COMPLETO (40 epocas = 42 jobs ~ 18 min por modelo)
+   hadoop jar dist/c4.jar c4.C4Driver /sutran/detecciones.csv /out/c4v2 /out/job0 /out/c3/prop_5 0.002 40 0.1 0.9 42
+   hadoop jar dist/c5.jar c5.C5Driver /sutran/detecciones.csv /out/c5v2 /out/job0 /out/c3/prop_5 0.002 40 0.05 0.9 42
+   argumentos: entrada base dirJob0 dirCeldasC3 cellSize epocas lr momento semilla
+   Guarda TODA la consola (tabla por epoca + "Evaluacion FINAL"). Pesos: <base>/pesos_finales.txt
+
+QUE PEGARME (por modelo)
+   - epocas 1, 2, 3 y las 3 ultimas, y el bloque "Evaluacion FINAL" completo
+   - la linea "# sitios con estadisticas: N" y tiempo_medio_por_epoca_s

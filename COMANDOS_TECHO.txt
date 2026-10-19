@@ -1,0 +1,19 @@
+TECHO por sitio: cuanto se puede explicar conociendo SOLO el cluster de la C3
+Probado en modo local con datos sinteticos (coincide con Python al 4to decimal).
+=====================================================================
+Pregunta: ¿los modelos C4/C5 estan por debajo de lo posible o ya estan en el limite de la informacion?
+  Si cada punto se predijera con la media REAL de su sitio:
+    R2_techo  = varianza entre sitios / varianza total   (regresion, C5)
+    AUC_techo = AUC de puntuar con la tasa REAL de graves del sitio   (clasificacion, C4)
+  Se calcula con TODAS las filas (en muestra): es un techo un poco optimista, NO un resultado de prueba.
+
+1. COMPILAR   (el Makefile ya incluye techo)
+   docker build -t sutran-build .
+   docker run --rm -v "${PWD}/dist:/app/dist" sutran-build
+
+2. CORRER   (1 job, ~25 s)
+   hdfs dfs -rm -r -f /out/techo
+   hadoop jar dist/techo.jar techo.TechoDriver /sutran/detecciones.csv /out/techo /out/c3/prop_5 0.002
+
+QUE PEGARME
+   - el bloque "TECHO por sitio" completo (4 lineas)

@@ -1,0 +1,37 @@
+C2 - variacion mensual del exceso (MapReduce TRIPLE con decimales)   [v2]
+Probado en modo local con datos sinteticos (coincide con Python, incluidos meses
+ausentes, meses de arranque y carreteras con una sola transicion); NO probado
+todavia con la regla nueva en tu cluster YARN.
+=====================================================================
+Pregunta: ¿en que mes subio o bajo mas el exceso promedio de cada carretera?
+
+  Job 1: (carretera, mes) -> n, sumExceso
+  Job 2: lee la salida del Job 1; por carretera ordena los meses y calcula la variacion % mes a mes
+  Job 3: lee la salida del Job 2; por carretera obtiene la mayor subida y la mayor bajada
+
+CAMBIOS v2 (documentalos en el informe)
+  - Un mes cuenta solo si n >= max(minN, minFrac x mediana mensual de SU carretera).
+    Con minN=30 fijo, Panamericana Norte comparaba meses de arranque (45 y 70 detecciones,
+    contra ~6000 en regimen normal) y el "mayor cambio" era un artefacto.
+  - MAYOR_SUBIDA solo sale si hubo una subida real; MAYOR_BAJADA solo si hubo una bajada real.
+  - Cada linea de job3 trae el numero de transiciones en que se baso.
+  - La variacion solo se calcula contra el mes calendario inmediato anterior; tras un hueco = NA.
+
+1. COMPILAR   (el Makefile ya incluye c2)
+   docker build -t sutran-build .
+   docker run --rm -v "${PWD}/dist:/app/dist" sutran-build
+
+2. CORRER
+   hdfs dfs -rm -r -f /out/c2
+   hadoop jar dist/c2.jar c2.C2Driver /sutran/detecciones.csv /out/c2 30 0.25
+                                      #  entrada               base   minN minFrac
+
+3. LEER
+   hdfs dfs -cat /out/c2/job3/part-00000                    # RESULTADO
+   hdfs dfs -cat /out/c2/job2/part-00000                    # serie mensual (sirve para Power BI)
+   columnas job2: carretera TAB mes,n,exceso_medio,variacion_abs,variacion_pct
+   columnas job3: carretera TAB TIPO,mes,n,exceso_medio,variacion_abs,variacion_pct,transiciones
+
+QUE PEGARME
+   - job3/part-00000 completo
+   - job2/part-00000 de Panamericana Norte (grep "^Panamericana Norte")

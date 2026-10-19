@@ -1,0 +1,36 @@
+JOB 0 - estadisticos globales  (probado en modo local con datos sinteticos;
+NO probado en tu cluster YARN real)
+=====================================================================
+
+0. ANTES DE TODO: confirma el separador y el encabezado del CSV
+   head -3 detecciones.csv
+   -> si NO separa con coma (por ejemplo ; o tabulador), cambia la constante
+      SEP en src/common/Detection.java (una sola linea, un solo archivo).
+   -> el CSV debe tener 9 columnas:
+      NRO_DETECCION,FECHA_PAPELETA,REGION,CARRETERA,LATITUD,LONGITUD,
+      LIMITE_VELOCIDAD,VELOCIDAD_DETECTADA,FECHA_CORTE
+
+1. COMPILAR (misma Dockerfile del lab anterior; lib/ con tus jars 3.3.0)
+   docker build -t sutran-build .
+   docker run --rm -v "${PWD}/dist:/app/dist" sutran-build
+   -> genera dist/job0.jar
+
+2. SUBIR EL CSV A HDFS CON BLOQUES DE 4 MB (en el master, con los 2 workers arriba)
+   hdfs dfs -mkdir -p /sutran
+   hdfs dfs -D dfs.blocksize=4194304 -put detecciones.csv /sutran/detecciones.csv
+   hdfs fsck /sutran/detecciones.csv -files -blocks | grep -E "Total blocks|blocks"
+   -> con ~14 MB deberian salir ~4 bloques (=> ~4 mappers). Si sale 1, no hay paralelismo.
+
+3. CORRER EL JOB 0
+   hdfs dfs -rm -r -f /out/job0
+   hadoop jar dist/job0.jar job0.Job0Driver /sutran/detecciones.csv /out/job0
+
+4. LEER EL RESULTADO
+   hdfs dfs -cat /out/job0/part-00000
+   (API vieja => el archivo se llama part-00000, NO part-r-00000; ese nombre es
+    solo de jobs con la API nueva, como el WordCount de ejemplo de la guia.)
+
+QUE PEGARME
+   - la salida de hdfs dfs -cat /out/job0/part-00000
+   - el "Resumen Job 0" que imprime el driver (filas validas/invalidas)
+   - la linea "Launched map tasks" y el "Total blocks" del fsck

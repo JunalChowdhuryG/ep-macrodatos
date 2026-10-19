@@ -1,0 +1,40 @@
+C3 - Agrupamiento por DENSIDAD sobre cuadricula (100% MapReduce, NO es K-means)
+Probado en modo local con datos sinteticos (coincide con un calculo independiente en
+Python); NO probado todavia en tu cluster YARN ni con los datos reales.
+=====================================================================
+Es una APROXIMACION tipo DBSCAN sobre una cuadricula, no DBSCAN exacto: dilo asi en el informe.
+
+  Job A      : puntos -> celdas; solo sobreviven las celdas con >= minPts puntos (el resto = ruido)
+  Jobs B1..n : propagacion de etiquetas entre celdas vecinas (8 vecinas); itera hasta que
+               ninguna cambie (el driver lee el contador cluster/cambios)
+  Job C      : cada punto toma el cluster de su celda; suma -> centroides y tamanos
+  Job D      : silueta simplificada por punto (distancia al centroide propio vs al otro mas cercano)
+  Job E      : Davies-Bouldin y silueta global
+  Job F      : (solo map) puntos etiquetados para Power BI
+
+PARAMETROS
+  cellSize (grados): 0.002 ~ 220 m.  minPts: puntos minimos por celda densa.
+  Empieza con 0.002 / 20 y compara 0.001 y 0.005: anota k, % de ruido y numero de iteraciones.
+  Cada iteracion es un job completo (~25 s en tu cluster). Si no converge pronto, los clusters
+  se estan "encadenando" a lo largo de la carretera: usa celdas mas chicas.
+
+1. COMPILAR   (el Makefile ya incluye c3)
+   docker build -t sutran-build .
+   docker run --rm -v "${PWD}/dist:/app/dist" sutran-build
+
+2. CORRER
+   hdfs dfs -rm -r -f /out/c3
+   hadoop jar dist/c3.jar c3.C3Driver /sutran/detecciones.csv /out/c3 0.002 20 60
+                                      #  entrada               base   size  minPts maxIter
+
+3. LEER
+   hdfs dfs -cat /out/c3/metricas/part-00000     # lineas 'cluster' + k, davies_bouldin, silueta_simplificada
+   hdfs dfs -cat /out/c3/centroids/part-00000    # centroides (suma/n): label TAB n,sumLat,sumLon
+   hdfs dfs -getmerge /out/c3/puntos puntos_c3.tsv   # TSV: cluster, lat, lon, exceso, carretera (-1 = ruido)
+
+   columnas de las lineas 'cluster': label,lat,lon,n,dispersion_km,silueta_media
+
+QUE PEGARME
+   - el "Resumen C3" que imprime el driver (celdas, iteraciones, puntos en cluster/ruido, jobs, total_s)
+   - de metricas/part-00000: las lineas k, davies_bouldin, silueta_simplificada
+   - las 15 lineas 'cluster' con mayor n:   hdfs dfs -cat /out/c3/metricas/part-00000 | grep ^cluster | sort -t, -k4 -nr | head -15

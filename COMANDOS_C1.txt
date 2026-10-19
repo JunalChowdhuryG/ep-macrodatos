@@ -1,0 +1,31 @@
+C1 - sitios criticos (MapReduce TRIPLE con decimales)
+Probado en modo local con datos sinteticos (coincide con un calculo
+independiente en Python); NO probado todavia en tu cluster YARN.
+=====================================================================
+Pregunta: ¿que sitios (cinemometros) tienen un % de exceso mayor que el promedio
+de su carretera, y cuantas veces mayor?
+
+  Job 1: (carretera, sitio) -> n y sumas.   sitio = lat/lon redondeadas a 3 decimales (~110 m)
+  Job 2: lee la salida del Job 1 y agrega por carretera
+  Job 3: une las salidas de Job 1 y Job 2, calcula razon = %sitio / %carretera, emite top-K
+         (descarta sitios con menos de minN detecciones)
+
+1. COMPILAR   (el Makefile ya incluye c1)
+   docker build -t sutran-build .
+   docker run --rm -v "${PWD}/dist:/app/dist" sutran-build
+
+2. CORRER     (con el CSV ya en HDFS con bloques de 4 MB)
+   hdfs dfs -rm -r -f /out/c1
+   hadoop jar dist/c1.jar c1.C1Driver /sutran/detecciones.csv /out/c1 30 20
+                                      #  entrada               base   minN topK
+
+3. LEER
+   hdfs dfs -cat /out/c1/job1/part-* | head      # sitios (intermedio)
+   hdfs dfs -cat /out/c1/job2/part-00000         # totales por carretera (intermedio)
+   hdfs dfs -cat /out/c1/job3/part-00000         # RESULTADO
+   columnas job3: carretera TAB rank,lat,lon,n,exceso_medio,pct_sitio,pct_carretera,razon
+
+QUE PEGARME
+   - job2/part-00000 completo (son solo 7 lineas)
+   - job3/part-00000 (primeras ~25 lineas)
+   - el "Resumen C1" (tiempos por job) y cuantos "Launched map tasks" tuvo cada uno

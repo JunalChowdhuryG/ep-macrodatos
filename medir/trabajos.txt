@@ -1,0 +1,8 @@
+# nombre|repeticiones|comando   ({OUT} = directorio de salida NUEVO que pone medir.sh; ejecutar desde la raiz del proyecto)
+# warmup se ejecuta pero NO entra al resumen (calienta JVM/cache tras arrancar el cluster)
+warmup|1|hadoop jar dist/job0.jar job0.Job0Driver /sutran/detecciones.csv {OUT}
+c1|3|hadoop jar dist/c1.jar c1.C1Driver /sutran/detecciones.csv {OUT} 30 20
+c2|3|hadoop jar dist/c2.jar c2.C2Driver /sutran/detecciones.csv {OUT} 30 0.25
+c3|3|hadoop jar dist/c3.jar c3.C3Driver /sutran/detecciones.csv {OUT} 0.002 20 60
+c4|3|hadoop jar dist/c4.jar c4.C4Driver /sutran/detecciones.csv {OUT} /out/job0 /out/c3/prop_5 0.002 5 0.1 0.9 42
+c5|3|hadoop jar dist/c5.jar c5.C5Driver /sutran/detecciones.csv {OUT} /out/job0 /out/c3/prop_5 0.002 5 0.05 0.9 42

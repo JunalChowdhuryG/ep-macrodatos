@@ -18,7 +18,7 @@ import java.util.List;
 public final class Detection {
 
     /** Separador del CSV. Cambiar AQUI si el archivo usa ';' o tabulador. */
-    public static final char SEP = ';';
+    public static final char SEP = ',';
     public static final int N_CAMPOS = 9;
 
     // Limites amplios del Peru para descartar coordenadas basura (0,0, etc.)

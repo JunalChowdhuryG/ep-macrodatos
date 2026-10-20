@@ -37,7 +37,7 @@ while IFS='|' read -r -u 3 JOB NREP CMD; do
     OUT="$OUTBASE/${MODO}_${RID}"
     $CLEAN "$OUT" >/dev/null 2>&1
     for n in $NODES; do
-      PID[$n]=$(remote "$n" "rm -f /tmp/bench_$RID.log; nohup bash /tmp/bench_sampler.sh /tmp/bench_$RID.log >/dev/null 2>&1 & echo \$!")
+      PID[$n]=$(remote "$n" "rm -f /tmp/bench_$RID.log; nohup bash /tmp/bench_sampler.sh /tmp/bench_$RID.log </dev/null >/dev/null 2>&1 & echo \$!")
     done
     sleep 2                                   # unas muestras en reposo antes del trabajo
     T0=$(date +%s.%N)
